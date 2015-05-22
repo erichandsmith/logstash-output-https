@@ -12,12 +12,11 @@ class LogStash::Outputs::Https < LogStash::Outputs::Base
 
 	public
 	def register
-        require "net/http"
-        require "uri"
+        require "net/http/persistent"
 
         @uri = URI.parse(@url)
-        @agent = Net::HTTP.new(@uri.host, @uri.port)
-        @agent.use_ssl = true
+        @agent = Net::HTTP::Persistent.new("logstash")
+        @agent.reuse_ssl_sessions = true
         @agent.verify_mode = OpenSSL::SSL::VERIFY_NONE
 	end
 
@@ -44,7 +43,7 @@ class LogStash::Outputs::Https < LogStash::Outputs::Base
 			request["Content-Type"] = "application/json"
 			request.body = event.to_json_with_metadata
 
-            response = @agent.request(request)
+            response = @agent.request(@uri, request)
             #puts response.code
 
         rescue Exception => e
