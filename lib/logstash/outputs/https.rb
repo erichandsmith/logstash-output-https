@@ -6,18 +6,20 @@ require "logstash/json"
 class LogStash::Outputs::Https < LogStash::Outputs::Base
 	config_name "https"
 
-    config :headers, :validate => :hash
     config :url, :validate => :string, :required => :true
-    config :verb, :validate => ["put", "post"], :default => "post", :required => :true
+    config :ca_cert_file, :validate => :path, :required => :true
+    config :headers, :validate => :hash
+    config :verb, :validate => ["put", "post"], :default => "post"
 
 	public
 	def register
         require "net/http/persistent"
 
         @uri = URI.parse(@url)
-        @agent = Net::HTTP::Persistent.new("logstash")
+        @agent = Net::HTTP::Persistent.new("logstash_client")
         @agent.reuse_ssl_sessions = true
-        @agent.verify_mode = OpenSSL::SSL::VERIFY_NONE
+		@agent.ca_file = @ca_cert_file
+        @agent.verify_mode = OpenSSL::SSL::VERIFY_PEER
 	end
 
 	public
